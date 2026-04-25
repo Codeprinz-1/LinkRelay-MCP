@@ -62,12 +62,7 @@ Set `"enabled": false` for any store you have not yet joined, or omit it entirel
 ```bash
 npm start
 # or directly:
-node dist/index.js
-```
-
----
-
-## MCP Tools
+node dist/mcp.js
 
 ### `convert_to_affiliate_link`
 
@@ -128,13 +123,93 @@ Add the following to your MCP client configuration (e.g. `claude_desktop_config.
   "mcpServers": {
     "linkrelay": {
       "command": "node",
-      "args": ["/path/to/LinkRelay-MCP/dist/index.js"]
+      "args": ["/path/to/LinkRelay-MCP/dist/mcp.js"]
     }
   }
 }
 ```
 
 Place your `linkrelay.config.json` in the working directory from which the client launches the server, or anywhere in the directory tree above it.
+
+---
+
+## Using as a Library (Streaming API)
+
+LinkRelay can also be used directly in any Node.js, edge, or browser project to intercept LLM streaming responses and rewrite affiliate links on the fly.
+
+```bash
+npm install linkrelay-mcp
+```
+
+### Vercel AI SDK (`textStream` is already `AsyncIterable<string>`)
+
+```ts
+import { wrapStream, loadConfig } from "linkrelay-mcp";
+
+const config = loadConfig(); // reads linkrelay.config.json
+const raw = result.textStream; // from the AI SDK
+for await (const chunk of wrapStream(raw, config)) {
+  process.stdout.write(chunk);
+}
+```
+
+### OpenAI SDK
+
+```ts
+import OpenAI from "openai";
+import { wrapOpenAIStream, loadConfig } from "linkrelay-mcp";
+
+const openai = new OpenAI();
+const config = loadConfig();
+const raw = openai.beta.chat.completions.stream({ model: "gpt-4o", messages });
+for await (const chunk of wrapOpenAIStream(raw, config)) {
+  process.stdout.write(chunk);
+}
+```
+
+### Anthropic SDK
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+import { wrapAnthropicStream, loadConfig } from "linkrelay-mcp";
+
+const client = new Anthropic();
+const config = loadConfig();
+const raw = client.messages.stream({ model: "claude-3-5-sonnet-latest", messages, max_tokens: 1024 });
+for await (const chunk of wrapAnthropicStream(raw, config)) {
+  process.stdout.write(chunk);
+}
+```
+
+### LangChain
+
+```ts
+import { ChatOpenAI } from "@langchain/openai";
+import { wrapLangChainStream, loadConfig } from "linkrelay-mcp";
+
+const config = loadConfig();
+const model = new ChatOpenAI({ streaming: true });
+const raw = await model.stream("Recommend a good laptop with links.");
+for await (const chunk of wrapLangChainStream(raw, config)) {
+  process.stdout.write(chunk);
+}
+```
+
+### Custom provider
+
+Use `wrapGenericStream` with any `AsyncIterable<T>` and a function that extracts the text from each event:
+
+```ts
+import { wrapGenericStream, loadConfig } from "linkrelay-mcp";
+
+const config = loadConfig();
+const converted = wrapGenericStream(myStream, config, (event) => event.text ?? null);
+for await (const chunk of converted) {
+  process.stdout.write(chunk);
+}
+```
+
+URLs split across chunk boundaries are automatically buffered and reassembled, so conversions are always accurate regardless of where the provider splits its output.
 
 ---
 
