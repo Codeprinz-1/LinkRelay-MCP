@@ -1,8 +1,7 @@
 // ── LinkRelay public library API ───────────────────────────────────────────
 //
 // Import from this module when using LinkRelay as a library in your own
-// Node / edge / browser code.  The MCP server CLI entry point lives in
-// src/mcp.ts and is exposed via the `linkrelay-mcp` bin.
+// Node / edge / browser code.
 
 // Core converter
 export { AffiliateConverter } from "./affiliateConverter.js";

@@ -1,8 +1,8 @@
-# LinkRelay-MCP
+# LinkRelay
 
-An **MCP (Model Context Protocol) server** that converts product URLs in AI conversations into affiliate links, letting developers earn referral income at no cost to users.
+A TypeScript library that intercepts LLM streaming responses and rewrites product URLs into affiliate links on the fly, at zero cost to users.
 
-When a user shares a product link from Amazon, eBay, Walmart, Best Buy, or Target, the AI assistant can call `convert_to_affiliate_link` (or `extract_and_convert_links` for bulk text) to obtain the affiliate version before sharing it.
+Supports Amazon, eBay, Walmart, Best Buy, and Target. Works with any provider that exposes a streaming `AsyncIterable`.
 
 ---
 
@@ -18,20 +18,17 @@ When a user shares a product link from Amazon, eBay, Walmart, Best Buy, or Targe
 
 ---
 
-## Quick Start
-
-### 1. Install
+## Install
 
 ```bash
-git clone https://github.com/Codeprinz-1/LinkRelay-MCP.git
-cd LinkRelay-MCP
-npm install
-npm run build
+npm install linkrelay-mcp
 ```
 
-### 2. Configure
+---
 
-Copy `linkrelay.config.json` to your project root (or anywhere in the directory tree above where you run the server) and fill in your affiliate IDs:
+## Configure
+
+Create a `linkrelay.config.json` file anywhere in your project tree and fill in your affiliate IDs:
 
 ```json
 {
@@ -57,89 +54,9 @@ Copy `linkrelay.config.json` to your project root (or anywhere in the directory 
 
 Set `"enabled": false` for any store you have not yet joined, or omit it entirely.
 
-### 3. Run the server
-
-```bash
-npm start
-# or directly:
-node dist/mcp.js
-
-### `convert_to_affiliate_link`
-
-Converts a single product URL to an affiliate link.
-
-**Input**
-
-| Field | Type   | Description                        |
-|-------|--------|------------------------------------|
-| `url` | string | The product URL to convert         |
-
-**Output** — JSON object:
-
-```jsonc
-{
-  "originalUrl": "https://www.amazon.com/dp/B08N5WRWNW",
-  "convertedUrl": "https://www.amazon.com/dp/B08N5WRWNW?tag=yourname-20",
-  "store": "amazon",
-  "converted": true
-}
-```
-
-### `extract_and_convert_links`
-
-Scans a block of text for product URLs and converts every eligible one.
-
-**Input**
-
-| Field  | Type   | Description                              |
-|--------|--------|------------------------------------------|
-| `text` | string | Text containing one or more product URLs |
-
-**Output** — JSON object:
-
-```jsonc
-{
-  "originalText": "...",
-  "convertedText": "... (with affiliate URLs substituted in) ...",
-  "conversions": [
-    {
-      "originalUrl": "https://www.amazon.com/dp/B08N5WRWNW",
-      "convertedUrl": "https://www.amazon.com/dp/B08N5WRWNW?tag=yourname-20",
-      "store": "amazon",
-      "converted": true
-    }
-  ]
-}
-```
-
 ---
 
-## Integrating with Claude Desktop (or another MCP client)
-
-Add the following to your MCP client configuration (e.g. `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "linkrelay": {
-      "command": "node",
-      "args": ["/path/to/LinkRelay-MCP/dist/mcp.js"]
-    }
-  }
-}
-```
-
-Place your `linkrelay.config.json` in the working directory from which the client launches the server, or anywhere in the directory tree above it.
-
----
-
-## Using as a Library (Streaming API)
-
-LinkRelay can also be used directly in any Node.js, edge, or browser project to intercept LLM streaming responses and rewrite affiliate links on the fly.
-
-```bash
-npm install linkrelay-mcp
-```
+## Usage
 
 ### Vercel AI SDK (`textStream` is already `AsyncIterable<string>`)
 
@@ -209,7 +126,60 @@ for await (const chunk of converted) {
 }
 ```
 
-URLs split across chunk boundaries are automatically buffered and reassembled, so conversions are always accurate regardless of where the provider splits its output.
+URLs that span a chunk boundary are automatically buffered and reassembled, so conversions are always accurate regardless of where the provider splits its output.
+
+---
+
+## One-shot conversion (no stream)
+
+```ts
+import { AffiliateConverter, loadConfig } from "linkrelay-mcp";
+
+const converter = new AffiliateConverter(loadConfig());
+
+// Single URL
+const result = converter.convertUrl("https://www.amazon.com/dp/B08N5WRWNW");
+console.log(result.convertedUrl); // → https://www.amazon.com/dp/B08N5WRWNW?tag=yourname-20
+
+// All URLs inside a block of text
+const { convertedText, conversions } = converter.convertLinksInText(myText);
+```
+
+---
+
+## API Reference
+
+### `loadConfig(configPath?: string): LinkRelayConfig`
+
+Reads `linkrelay.config.json`, searching from the current working directory up to the filesystem root. Pass an explicit path to override the search.
+
+### `AffiliateConverter`
+
+| Method | Returns | Description |
+|---|---|---|
+| `convertUrl(url: string)` | `ConversionResult` | Converts a single URL string |
+| `convertLinksInText(text: string)` | `TextConversionResult` | Scans text for URLs and converts every eligible one |
+
+### `LinkRelayInterceptor`
+
+Low-level stateful processor for streaming chunk-by-chunk conversion.
+
+| Method | Description |
+|---|---|
+| `processChunk(chunk: string): string` | Process one delta; buffers partial URLs automatically |
+| `flush(): string` | Call once after the last chunk to drain any buffered remainder |
+
+### Stream wrappers
+
+All wrappers return `AsyncGenerator<string>` and handle cross-boundary URLs transparently.
+
+| Export | Input stream type |
+|---|---|
+| `wrapStream(stream, config)` | `AsyncIterable<string>` |
+| `wrapGenericStream(stream, config, extractor)` | `AsyncIterable<T>` |
+| `wrapOpenAIStream(stream, config)` | OpenAI chat completion stream |
+| `wrapAnthropicStream(stream, config)` | Anthropic messages stream |
+| `wrapLangChainStream(stream, config)` | LangChain `BaseMessageChunk` stream |
 
 ---
 
@@ -224,8 +194,6 @@ npm run typecheck   # type-check without emitting files
 ---
 
 ## Configuration Reference
-
-`linkrelay.config.json` lives next to your project (or in any parent directory).
 
 ```jsonc
 {
