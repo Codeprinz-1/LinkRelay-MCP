@@ -1,0 +1,41 @@
+{
+  "stores": {
+    "amazon": {
+      "storeName": "Amazon",
+      "enabled": true,
+      "params": {
+        "associateId": "YOUR_ASSOCIATE_ID-20"
+      }
+    },
+    "ebay": {
+      "storeName": "eBay",
+      "enabled": true,
+      "params": {
+        "campaignId": "YOUR_EPN_CAMPAIGN_ID",
+        "publisherId": "YOUR_EPN_PUBLISHER_ID",
+        "toolId": "10001"
+      }
+    },
+    "walmart": {
+      "storeName": "Walmart",
+      "enabled": false,
+      "params": {
+        "publisherId": "YOUR_IMPACT_PUBLISHER_ID"
+      }
+    },
+    "bestbuy": {
+      "storeName": "Best Buy",
+      "enabled": false,
+      "params": {
+        "publisherId": "YOUR_CJ_PUBLISHER_ID"
+      }
+    },
+    "target": {
+      "storeName": "Target",
+      "enabled": false,
+      "params": {
+        "affiliateId": "YOUR_IMPACT_AFFILIATE_ID"
+      }
+    }
+  }
+}

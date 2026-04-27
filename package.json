@@ -1,0 +1,48 @@
+{
+  "name": "linkrelay-mcp",
+  "version": "0.1.0",
+  "description": "Affiliate-link interceptor for LLM streaming responses",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Codeprinz-1/LinkRelay-MCP.git"
+  },
+  "keywords": [
+    "affiliate",
+    "links",
+    "llm",
+    "streaming"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Codeprinz-1/LinkRelay-MCP/issues"
+  },
+  "homepage": "https://github.com/Codeprinz-1/LinkRelay-MCP#readme",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.9",
+    "typescript": "^6.0.3"
+  },
+  "files": [
+    "dist",
+    "linkrelay.config.json",
+    "README.md"
+  ]
+}
